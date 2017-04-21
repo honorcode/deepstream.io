@@ -120,6 +120,24 @@ describe('objects are created from paths and their value is set correctly', () =
     }))
   })
 
+  it('sets values for arrays of arrays', () => {
+    let record = {},
+      jsonPath = new JsonPath('addresses[1][1]')
+    jsonPath.setValue(record, 'new-Street1')
+
+  expect(JSON.stringify(record)).toEqual(JSON.stringify({
+    addresses: [
+        undefined,
+        [
+            'new-Street1', 'road1', 'blvd1'
+        ],
+        [
+            'street2', 'road2', 'blvd2'
+        ]
+    ]
+    }))
+  })
+
   it('extends existing objects', () => {
     let record = { firstname: 'Wolfram' },
       jsonPath = new JsonPath('lastname')
@@ -159,7 +177,7 @@ describe('objects are created from paths and their value is set correctly', () =
     })
   })
 
-it('extends existing arrays with objects', () => {
+  it('extends existing arrays with objects', () => {
     let record = {
         firstname: 'Wolfram',
         animals: [undefined, 'Cow', 'Ostrich']
@@ -172,4 +190,5 @@ it('extends existing arrays with objects', () => {
       animals: [{ xxx: 'Emu'}, 'Cow', 'Ostrich']
     })
   })
+
 })
