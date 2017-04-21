@@ -36,7 +36,6 @@ JsonPath.prototype.setValue = function (node, value) {
     } else if (this._tokens[i].indexOf('=') > 0) {
       const arrParts = this._tokens[i].split('=')
       const token = arrParts[0]
-      const idx = parseInt(arrParts[1], 10)
 
       if (node[token] !== undefined) {
         node = node[token]
@@ -44,15 +43,29 @@ JsonPath.prototype.setValue = function (node, value) {
         node = node[token] = []
       }
 
-      if (node[idx] !== undefined) {
-        if (node[idx] instanceof Object || node[idx] instanceof Array) {
-          node = node[idx]
+      // _tokens parts could contain array of arrays 'part'
+      // (e.g. arr[0][1][2][3][4]...[n])
+      // => tokenized as arr=0=1=2=3=4...=n
+      // --> code above handles the first part ('arr')
+      //     of the array token part (arr=0=1=2=3=4...=n)
+      // --> code below handles looping over the multi-dim part ('=0=1=2=3=4..=n')
+      //     of the array token part (arr=0=1=2=3=4..=n))
+      let j = 0
+      for (j = 1; j < arrParts.length; j++) {
+        const idx = parseInt(arrParts[j], 10)
+        if (node[idx] !== undefined) {
+          if (node[idx] instanceof Object || node[idx] instanceof Array) {
+            node = node[idx]
+          }
+        } else if (j < (arrParts.length - 1)) {
+          node = node[idx] = []
+        } else if (this._tokens[i + 1].indexOf('=') > 0) {
+          node = node[idx] = []
+        } else {
+          node = node[idx] = {}
         }
-      } else if (this._tokens[i + 1].indexOf('=') > 0) {
-        node = node[idx] = []
-      } else {
-        node = node[idx] = {}
       }
+
     } else {
       node = node[this._tokens[i]] = {}
     }
@@ -61,12 +74,30 @@ JsonPath.prototype.setValue = function (node, value) {
   if (this._tokens[i].indexOf('=') > 0) {
     const arrParts = this._tokens[i].split('=')
     const token = arrParts[0]
-    const idx = parseInt(arrParts[1], 10)
 
     if (node[token] !== undefined) {
       node = node[token]
     } else {
       node = node[token] = []
+    }
+    // _tokens parts could contain array of arrays 'part'
+    // (e.g. arr[0][1][2][3][4]...[n])
+    // => tokenized as arr=0=1=2=3=4...=n
+    // --> code above handles the first part ('arr')
+    //     of the array token part (arr=0=1=2=3=4...=n)
+    // --> code below handles looping over the multi-dim part ('=0=1=2=3=4..=n')
+    //     of the array token part (arr=0=1=2=3=4..=n))
+    let j = 0
+    let idx = undefined
+    for (j = 1; j < arrParts.length; j++) {
+      idx = parseInt(arrParts[j], 10)
+      if (node[idx] !== undefined) {
+        if (node[idx] instanceof Object || node[idx] instanceof Array) {
+          node = node[idx]
+        }
+      } else if (j < (arrParts.length - 1)) {
+        node = node[idx] = []
+      }
     }
     node[idx] = value
   } else {
@@ -88,6 +119,7 @@ JsonPath.prototype._tokenize = function () {
   // see setValue fnc above for special handling of array item parsing vs numeric obj member name
   // e.g. 'object.1' parsing. this allows for support of parsing and differentiating object
   // member names that are also numeric values
+  // also supports multi-dimensional arrays e.g. arr[0][1][2][3]... => arr=0=1=2=3...
   let str = this._path.replace(/\s/g, '')
   str = str.replace(/\[(.*?)\]/g, '=$1')
   const parts = str.split(SPLIT_REG_EXP)
