@@ -34,14 +34,16 @@ JsonPath.prototype.setValue = function (node, value) {
   let parent = node
   let token = undefined
 
+  // validate start state first
   if (node === undefined || tokensLen === 0) {
     return
   }
 
+  // traverse root obj (node)
+  // create path nodes of the proper type (array|object) where necessary
   for (i = 0; i < tokensLen; i++) {
     token = this._tokens[i]
     parent = traverser
-
 
     const isLastPathToken = (i === (tokensLen - 1))
     const isArrayToken = (token.indexOf('=') >= 0)
@@ -77,6 +79,7 @@ JsonPath.prototype.setValue = function (node, value) {
     traverser = elem
   }
 
+  // assign value to path target
   if (parent !== undefined && token !== undefined) {
     parent[token] = value
   }
@@ -97,7 +100,9 @@ JsonPath.prototype._tokenize = function () {
   // see setValue fnc above for special handling of array item parsing vs numeric obj member name
   // e.g. 'object.1' parsing. this allows for support of parsing and differentiating object
   // member names that are also numeric values
-  // also supports multi-dimensional arrays e.g. arr[0][1][2][3]... => arr=0=1=2=3...
+  // also supports multi-dimensional arrays e.g. arr[0][1][2][3]... => arr.=0.=1.=2.=3...
+  // note: array index tokens are prefixed from regex with a '=' e.g. .=0.=1.=2 compared with
+  // numeric obj field names tokens which are just .0.1.2.3
   let str = this._path.replace(/\s/g, '')
   str = str.replace(/\[(.*?)\]/g, '.=$1')
   const parts = str.split(SPLIT_REG_EXP)
