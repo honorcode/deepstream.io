@@ -29,80 +29,58 @@ const JsonPath = function (path) {
  */
 JsonPath.prototype.setValue = function (node, value) {
   let i = 0
+  const tokensLen = (this._tokens === undefined) ? 0 : this._tokens.length
+  let traverser = node
+  let parent = node
+  let token = undefined
 
-  for (i = 0; i < this._tokens.length - 1; i++) {
-    if (node[this._tokens[i]] !== undefined) {
-      node = node[this._tokens[i]]
-    } else if (this._tokens[i].indexOf('=') > 0) {
-      const arrParts = this._tokens[i].split('=')
-      const token = arrParts[0]
+  if (node === undefined || tokensLen === 0) {
+    return
+  }
 
-      if (node[token] !== undefined) {
-        node = node[token]
-      } else {
-        node = node[token] = []
-      }
+  for (i = 0; i < tokensLen; i++) {
+    token = this._tokens[i]
+    parent = traverser
 
-      // _tokens parts could contain array of arrays 'part'
-      // (e.g. arr[0][1][2][3][4]...[n])
-      // => tokenized as arr=0=1=2=3=4...=n
-      // --> code above handles the first part ('arr')
-      //     of the array token part (arr=0=1=2=3=4...=n)
-      // --> code below handles looping over the multi-dim part ('=0=1=2=3=4..=n')
-      //     of the array token part (arr=0=1=2=3=4..=n))
-      let j = 0
-      for (j = 1; j < arrParts.length; j++) {
-        const idx = parseInt(arrParts[j], 10)
-        if (node[idx] !== undefined) {
-          if (node[idx] instanceof Object || node[idx] instanceof Array) {
-            node = node[idx]
+
+    const isLastPathToken = (i === (tokensLen - 1))
+    const isArrayToken = (token.indexOf('=') >= 0)
+    const nextToken = isLastPathToken ? undefined : this._tokens[i + 1]
+    const isNextTokenArrayToken = isLastPathToken ? undefined : (nextToken.indexOf('=') >= 0)
+    let elem = undefined
+
+    if (isArrayToken) {
+      const idx = token.split('=')[1] * 1
+      elem = traverser[idx]
+      if (!isLastPathToken) {
+        if (isNextTokenArrayToken) {
+          if (elem === undefined || !(elem instanceof Array)) {
+            traverser[idx] = []
           }
-        } else if (j < (arrParts.length - 1)) {
-          node = node[idx] = []
-        } else if (this._tokens[i + 1].indexOf('=') > 0) {
-          node = node[idx] = []
-        } else {
-          node = node[idx] = {}
+        } else if (elem === undefined || !(elem instanceof Object)) {
+          traverser[idx] = {}
         }
+        elem = traverser[idx]
+      } else {
+        token = idx
       }
-
+    } else if (traverser[token] !== undefined) {
+      elem = traverser[token]
+    } else if (!isLastPathToken && isNextTokenArrayToken) {
+      traverser[token] = []
+      elem = traverser[token]
     } else {
-      node = node[this._tokens[i]] = {}
+      traverser[token] = {}
+      elem = traverser[token]
     }
+    parent = traverser
+    traverser = elem
   }
 
-  if (this._tokens[i].indexOf('=') > 0) {
-    const arrParts = this._tokens[i].split('=')
-    const token = arrParts[0]
-
-    if (node[token] !== undefined) {
-      node = node[token]
-    } else {
-      node = node[token] = []
-    }
-    // _tokens parts could contain array of arrays 'part'
-    // (e.g. arr[0][1][2][3][4]...[n])
-    // => tokenized as arr=0=1=2=3=4...=n
-    // --> code above handles the first part ('arr')
-    //     of the array token part (arr=0=1=2=3=4...=n)
-    // --> code below handles looping over the multi-dim part ('=0=1=2=3=4..=n')
-    //     of the array token part (arr=0=1=2=3=4..=n))
-    let j = 0
-    let idx = undefined
-    for (j = 1; j < arrParts.length; j++) {
-      idx = parseInt(arrParts[j], 10)
-      if (node[idx] !== undefined) {
-        if (node[idx] instanceof Object || node[idx] instanceof Array) {
-          node = node[idx]
-        }
-      } else if (j < (arrParts.length - 1)) {
-        node = node[idx] = []
-      }
-    }
-    node[idx] = value
-  } else {
-    node[this._tokens[i]] = value
+  if (parent !== undefined && token !== undefined) {
+    parent[token] = value
   }
+
 }
 
 /**
@@ -121,7 +99,7 @@ JsonPath.prototype._tokenize = function () {
   // member names that are also numeric values
   // also supports multi-dimensional arrays e.g. arr[0][1][2][3]... => arr=0=1=2=3...
   let str = this._path.replace(/\s/g, '')
-  str = str.replace(/\[(.*?)\]/g, '=$1')
+  str = str.replace(/\[(.*?)\]/g, '.=$1')
   const parts = str.split(SPLIT_REG_EXP)
   let part
   let i
