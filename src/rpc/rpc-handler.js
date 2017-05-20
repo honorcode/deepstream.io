@@ -54,13 +54,10 @@ module.exports = class RpcHandler {
       const rpcData = this._rpcs.get(correlationId)
       if (rpcData) {
         rpcData.rpc.handle(message)
-        if (rpcData.rpc.isComplete) {
-          this._rpcs.delete(correlationId)
-        }
       } else {
         socketWrapper.sendError(
           C.TOPIC.RPC,
-          C.EVENT.INVALID_MESSAGE_DATA,
+          C.EVENT.INVALID_RPC_CORRELATION_ID,
           `unexpected state for rpc ${message.data[rpcNameIndex]} with action ${message.action}`
         )
       }
@@ -282,7 +279,18 @@ module.exports = class RpcHandler {
     }
   }
 
-
+  /**
+   * Called by the RPC with correlationId to destroy itself
+   * when lifecycle is over.
+   *
+   * @param  {String} correlationId id of the RPC
+   *
+   * @private
+   * @returns {void}
+   */
+  _$onDestroy (correlationId) {
+    this._rpcs.delete(correlationId)
+  }
 }
 
 /**

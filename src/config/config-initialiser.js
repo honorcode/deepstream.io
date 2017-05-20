@@ -21,6 +21,15 @@ let commandLineArguments
 exports.initialise = function (config) {
   commandLineArguments = global.deepstreamCLI || {}
 
+  // The default plugins required by deepstream to run
+  config.pluginTypes = [
+    'messageConnector',
+    'storage',
+    'cache',
+    'authenticationHandler',
+    'permissionHandler'
+  ]
+
   handleUUIDProperty(config)
   handleSSLProperties(config)
   handleLogger(config)
@@ -133,7 +142,7 @@ function handlePlugins (config) {
   if (config.plugins == null) {
     return
   }
-  // mappnig between the root properties which contains the plugin instance
+  // mapping between the root properties which contains the plugin instance
   // and the plugin configuration objects
   const connectorMap = {
     messageConnector: 'message',
@@ -147,17 +156,19 @@ function handlePlugins (config) {
     cache: 'cache',
     storage: 'storage'
   }
-  const plugins = {
-    messageConnector: config.plugins.message,
-    cache: config.plugins.cache,
-    storage: config.plugins.storage
-  }
+  const plugins = Object.assign({}, config.plugins, {
+    messageConnector: config.plugins.message
+  })
+  delete plugins.message
 
   for (const key in plugins) {
     const plugin = plugins[key]
-    if (plugin != null) {
+    if (plugin) {
       const PluginConstructor = resolvePluginClass(plugin, typeMap[connectorMap[key]])
       config[key] = new PluginConstructor(plugin.options)
+      if(config.pluginTypes.indexOf(key) === -1) {
+        config.pluginTypes.push(key)
+      }
     }
   }
 }
@@ -174,8 +185,7 @@ function handlePlugins (config) {
  * @private
  * @returns {Function} Instance return be the plugin constructor
  */
-function resolvePluginClass (plugin, type) {
-  // nexe needs *global.require* for __dynamic__ modules
+function resolvePluginClass (plugin, type) {  // nexe needs *global.require* for __dynamic__ modules
   // but browserify and proxyquire can't handle *global.require*
   const req = global && global.require ? global.require : require
   let requirePath
@@ -183,12 +193,13 @@ function resolvePluginClass (plugin, type) {
   if (plugin.path != null) {
     requirePath = fileUtils.lookupLibRequirePath(plugin.path)
     pluginConstructor = req(requirePath)
+  } else if (plugin.name != null && type) {
+    requirePath = `deepstream.io-${type}-${plugin.name}`
+    requirePath = fileUtils.lookupLibRequirePath(requirePath)
+    pluginConstructor = req(requirePath)
   } else if (plugin.name != null) {
-    if (type != null) {
-      requirePath = `deepstream.io-${type}-${plugin.name}`
-      requirePath = fileUtils.lookupLibRequirePath(requirePath)
-      pluginConstructor = req(requirePath)
-    }
+    requirePath = fileUtils.lookupLibRequirePath(plugin.name)
+    pluginConstructor = req(requirePath)
   } else {
     throw new Error(`Neither name nor path property found for ${type}`)
   }
@@ -216,13 +227,13 @@ function handleAuthStrategy (config) {
     throw new Error('No authentication type specified')
   }
 
-  if (!authStrategies[config.auth.type]) {
-    throw new Error(`Unknown authentication type ${config.auth.type}`)
-  }
-
   if (commandLineArguments.disableAuth) {
     config.auth.type = 'none'
     config.auth.options = {}
+  }
+
+  if (!authStrategies[config.auth.type] && !config.auth.path) {
+    throw new Error(`Unknown authentication type ${config.auth.type}`)
   }
 
   if (config.auth.options && config.auth.options.path) {
@@ -253,13 +264,13 @@ function handlePermissionStrategy (config) {
     throw new Error('No permission type specified')
   }
 
-  if (!permissionStrategies[config.permission.type]) {
-    throw new Error(`Unknown permission type ${config.permission.type}`)
-  }
-
   if (commandLineArguments.disablePermissions) {
     config.permission.type = 'none'
     config.permission.options = {}
+  }
+
+  if (!permissionStrategies[config.permission.type] && !config.permission.path) {
+    throw new Error(`Unknown permission type ${config.permission.type}`)
   }
 
   if (config.permission.options && config.permission.options.path) {
