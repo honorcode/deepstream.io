@@ -12,7 +12,7 @@ const EventEmitter = require('events').EventEmitter
 let realProcess
 let emitter
 
-xdescribe('cluster registry adds and removes names', () => {
+describe('cluster registry adds and removes names', () => {
   let clusterRegistry
 
   const addSpy = jasmine.createSpy('add')

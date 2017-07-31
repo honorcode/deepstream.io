@@ -9,7 +9,7 @@ const connectionEndpointMock = {
   getConnectionCount() { return 8 }
 }
 
-xdescribe('distributed-state-registry adds and removes names', () => {
+describe('distributed-state-registry adds and removes names', () => {
   const createClusterRegistry = function (serverName, externalUrl) {
     const options = {
       serverName,

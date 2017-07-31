@@ -85,7 +85,6 @@ describe('encounters timeouts and errors during dependency initialisations', () 
     })
   })
 
-/*
   it('creates a depdendency initialiser and doesnt initialise a plugin in time', (next) => {
     dependencyInitialiser = new DependencyInitialiser({}, options, options.plugin, 'plugin')
     dependencyInitialiser.on('ready', onReady)
@@ -114,7 +113,6 @@ describe('encounters timeouts and errors during dependency initialisations', () 
     } catch (_err) {}
   })
 
-*/
   it('enable console.error', () => {
     Object.defineProperty(console, 'error', {
       value: originalConsoleLog
