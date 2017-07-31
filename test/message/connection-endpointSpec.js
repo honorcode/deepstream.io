@@ -11,11 +11,11 @@ httpMock.createServer = httpMock.createServer
 httpsMock.createServer = httpsMock.createServer
 const SocketMock = require('../mocks/socket-mock')
 const SocketWrapperMock = require('../mocks/socket-wrapper-mock')
-const ConnectionEndpoint = proxyquire('../../src/message/uws-connection-endpoint', {
+const ConnectionEndpoint = proxyquire('../../src/message/uws/connection-endpoint', {
   uws: uwsMock,
   http: httpMock,
   https: httpsMock,
-  './uws-socket-wrapper': SocketWrapperMock
+  './socket-wrapper': SocketWrapperMock
 })
 const DependencyInitialiser = require('../../src/utils/dependency-initialiser')
 const _msg = require('../test-helper/test-helper').msg
@@ -43,8 +43,7 @@ describe('connection endpoint', () => {
     authenticationHandlerMock.reset()
 
     connectionEndpoint = new ConnectionEndpoint(options, () => {})
-    options.connectionEndpoint = connectionEndpoint
-    const depInit = new DependencyInitialiser(mockDs, options, 'connectionEndpoint')
+    const depInit = new DependencyInitialiser(mockDs, options, connectionEndpoint, 'connectionEndpoint')
     depInit.on('ready', () => {
       connectionEndpoint.onMessages()
       connectionEndpoint.onMessages = function (socket, messages) {
@@ -402,8 +401,7 @@ describe('connection endpoint doesn\'t log credentials if logInvalidAuthData is 
     const options2 = Object.assign({}, options)
     options2.logInvalidAuthData = false
     const connectionEndpoint2 = new ConnectionEndpoint(options2, () => {})
-    options2.connectionEndpoint = connectionEndpoint2
-    const depInit = new DependencyInitialiser({ _options: options2 }, options2, 'connectionEndpoint')
+    const depInit = new DependencyInitialiser({ _options: options2 }, options2, connectionEndpoint2, 'connectionEndpoint')
     depInit.on('ready', () => {
       connectionEndpoint2._server._simulateUpgrade(new SocketMock())
       socketWrapperMock = uwsMock.simulateConnection()

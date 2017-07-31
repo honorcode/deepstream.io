@@ -58,24 +58,27 @@ exports.get = function () {
            */
           unauthenticatedClientTimeout: 180000,
           maxAuthAttempts: 3,
-          logInvalidAuthData: true,
+          logInvalidAuthData: false,
           maxMessageSize: 1048576
+        }
+      },
+      http: {
+        name: 'http',
+        options: {
+          port: 8080,
+          host: '0.0.0.0',
+          allowAuthData: true,
+          enableAuthEndpoint: false,
+          authPath: '/auth',
+          postPath: '/',
+          getPath: '/',
+          healthCheckPath: '/health-check',
+          logInvalidAuthData: false,
+          allowAllOrigins: true,
+          origins: []
         }
       }
     },
-
-    /*
-     * Redundant connection config (maintained for overriding by environment/CLI)
-     */
-    port: null,
-    host: null,
-    urlPath: null,
-    healthCheckPath: null,
-    heartbeatInterval: null,
-    unauthenticatedClientTimeout: null,
-    maxAuthAttempts: null,
-    logInvalidAuthData: null,
-    maxMessageSize: null,
 
     /*
      * Default Plugins
