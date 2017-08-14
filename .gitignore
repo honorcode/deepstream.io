@@ -40,3 +40,4 @@ npm-debug.*
 .idea
 
 licenses.json
+yarn.lock
