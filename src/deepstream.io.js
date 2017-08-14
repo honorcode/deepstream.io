@@ -110,11 +110,7 @@ Deepstream.readMessage = readMessage
  */
 Deepstream.prototype.set = function (key, value) {
   let optionName
-  if (key === 'message' || key === 'messageConnector') {
-    throw new Error('unable to start deepstream with a message connector, these have been removed as part of deepstream.io v3.0')
-  } else {
-    optionName = key
-  }
+  optionName = key
 
   if (this._options[optionName] === undefined) {
     throw new Error(`Unknown option "${optionName}"`)
